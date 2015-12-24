@@ -281,7 +281,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val parents = addSerializable(abstractFunctionErasedType)
         val funOwner = originalFunction.symbol.owner
 
-        // TODO harmonize the naming of delamdafy anon-fun classes with those spun up by Uncurry
+        // TODO harmonize the naming of delambdafy anon-fun classes with those spun up by Uncurry
         //      - make `anonClass.isAnonymousClass` true.
         //      - use `newAnonymousClassSymbol` or push the required variations into a similar factory method
         //      - reinstate the assertion in `Erasure.resolveAnonymousBridgeClash`
@@ -294,6 +294,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val name = unit.freshTypeName(s"$oldClassPart$suffix".replace("$anon", "$nestedInAnon"))
 
         val lambdaClass = pkg newClassSymbol(name, originalFunction.pos, FINAL | SYNTHETIC) addAnnotation SerialVersionUIDAnnotation
+        lambdaClass.associatedFile = unit.source.file
         // make sure currentRun.compiles(lambdaClass) is true (AddInterfaces does the same for trait impl classes)
         currentRun.symSource(lambdaClass) = funOwner.sourceFile
         lambdaClass setInfo ClassInfoType(parents, newScope, lambdaClass)
@@ -444,7 +445,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       def adaptAndPostErase(tree: Tree, pt: Type): (Boolean, Tree) = {
         val (needsAdapt, adaptedTree) = adapt(tree, pt)
         val trans = postErasure.newTransformer(unit)
-        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 elimnates ErasedValueTypes
+        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 eliminates ErasedValueTypes
         (needsAdapt, postErasedTree)
       }
 

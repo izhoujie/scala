@@ -76,7 +76,7 @@ trait ScalaSettings extends AbsScalaSettings
     val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
     val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
-    val macros              = Choice("experimental.macros", "Allow macro defintion (besides implementation and application)")
+    val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
   }
   val language      = {
     val description = "Enable or disable language features"
@@ -175,6 +175,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YconstOptimization  = BooleanSetting    ("-Yconst-opt", "Perform optimization with constant values.")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
+  val completion      = ChoiceSetting     ("-Ycompletion", "provider", "Select tab-completion in the REPL.", List("pc","adhoc","none"), "pc")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
   val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   //val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
@@ -235,6 +236,7 @@ trait ScalaSettings extends AbsScalaSettings
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
+    val closureElimination      = Choice("closure-elimination" ,      "Rewrite closure invocations to the implementation method and eliminate closures.")
     val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled.")
     val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath.")
 
@@ -243,7 +245,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking)
+    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking, closureElimination)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -266,10 +268,14 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
   def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
+  def YoptClosureElimination      = Yopt.contains(YoptChoices.closureElimination)
 
   def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
   def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
+
+  def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureElimination
+  def YoptAddToBytecodeRepository = YoptInlinerEnabled || YoptClosureElimination
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -361,8 +367,8 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
   val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
-  val YpresentationStrict  = BooleanSetting("-Ypresentation-strict", "Do not report type errors in sources with syntax errors.")
-
+  val YpresentationAnyThread  = BooleanSetting("-Ypresentation-any-thread", "Allow use of the presentation compiler from any thread")
+  val YpresentationStrict     = BooleanSetting("-Ypresentation-strict", "Do not report type errors in sources with syntax errors.")
   val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
   val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some((0, 999)), str => Some(str.toInt))

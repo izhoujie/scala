@@ -145,8 +145,8 @@ trait Namers extends MethodSynthesis {
         // while Scala's enum constants live directly in the class.
         // We don't check for clazz.superClass == JavaEnumClass, because this causes a illegal
         // cyclic reference error. See the commit message for details.
-        if (context.unit.isJava) owner.companionClass.hasEnumFlag else owner.hasEnumFlag
-      vd.mods.hasAllFlags(ENUM | STABLE | STATIC) && ownerHasEnumFlag
+        if (context.unit.isJava) owner.companionClass.hasJavaEnumFlag else owner.hasJavaEnumFlag
+      vd.mods.hasAllFlags(JAVA_ENUM | STABLE | STATIC) && ownerHasEnumFlag
     }
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
@@ -204,7 +204,7 @@ trait Namers extends MethodSynthesis {
     }
 
     // FIXME - this logic needs to be thoroughly explained
-    // and justified.  I know it's wrong with repect to package
+    // and justified.  I know it's wrong with respect to package
     // objects, but I think it's also wrong in other ways.
     protected def conflict(newS: Symbol, oldS: Symbol) = (
        (   !oldS.isSourceMethod
@@ -1106,7 +1106,7 @@ trait Namers extends MethodSynthesis {
        * As a first side effect, this method assigns a MethodType constructed using this
        * return type to `meth`. This allows omitting the result type for recursive methods.
        *
-       * As another side effect, this method also assigns paramter types from the overridden
+       * As another side effect, this method also assigns parameter types from the overridden
        * method to parameters of `meth` that have missing types (the parser accepts missing
        * parameter types under -Yinfer-argument-types).
        */

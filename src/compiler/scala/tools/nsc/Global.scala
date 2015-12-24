@@ -231,7 +231,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Called from parser, which signals hereby that a method definition has been parsed. */
   def signalParseProgress(pos: Position) {}
 
-  /** Called by ScalaDocAnalyzer when a doc comment has been parsed. */
+  /** Called by ScaladocAnalyzer when a doc comment has been parsed. */
   def signalParsedDocComment(comment: String, pos: Position) = {
     // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
@@ -1675,23 +1675,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def getFile(clazz: Symbol, suffix: String): File = getFile(clazz.sourceFile, clazz.fullName split '.', suffix)
 
   private def writeICode() {
-    val printer = new icodes.TextPrinter(null, icodes.linearizer)
-    icodes.classes.values.foreach((cls) => {
-      val moduleSfx = if (cls.symbol.hasModuleFlag) "$" else ""
-      val phaseSfx  = if (settings.debug) phase else "" // only for debugging, appending the full phasename breaks windows build
-      val file      = getFile(cls.symbol, s"$moduleSfx$phaseSfx.icode")
+    val printer = new icodes.TextPrinter(writer = null, icodes.linearizer)
+    icodes.classes.values foreach { cls =>
+      val file = {
+        val module = if (cls.symbol.hasModuleFlag) "$" else ""
+        val faze   = if (settings.debug) phase.name else f"${phase.id}%02d" // avoid breaking windows build with long filename
+        getFile(cls.symbol, s"$module-$faze.icode")
+      }
 
       try {
         val stream = new FileOutputStream(file)
         printer.setWriter(new PrintWriter(stream, true))
-        printer.printClass(cls)
-        informProgress("wrote " + file)
+        try
+          printer.printClass(cls)
+        finally
+          stream.close()
+        informProgress(s"wrote $file")
       } catch {
-        case ex: IOException =>
-          if (settings.debug) ex.printStackTrace()
-        globalError("could not write file " + file)
+        case e: IOException =>
+          if (settings.debug) e.printStackTrace()
+          globalError(s"could not write file $file")
       }
-    })
+    }
   }
   def createJavadoc    = false
 }
